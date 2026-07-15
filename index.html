@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sample Sort Rush — Environmental Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10231F;
+    --paper:#F3EFE3;
+    --panel:#0F3D3E;
+    --panel-light:#164B4C;
+    --amber:#F2A93B;
+    --red:#D64545;
+    --green:#4FB286;
+    --water:#3E8FB0;
+    --line: rgba(243,239,227,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:24px 12px 60px;
+  }
+  .app{
+    width:100%;
+    max-width:720px;
+  }
+  h1,h2,h3{font-family:'Space Grotesk', sans-serif; margin:0;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin-bottom:6px;
+  }
+  header{margin-bottom:20px;}
+  header h1{font-size:28px; line-height:1.15;}
+  header p{color:rgba(243,239,227,0.65); font-size:14px; margin-top:8px; max-width:52ch;}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:20px;
+    position:relative;
+  }
+  .panel + .panel{margin-top:16px;}
+
+  /* dial motif */
+  .dial{
+    width:54px;height:54px;border-radius:50%;
+    border:3px solid var(--amber);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;
+    position:relative; flex:none;
+  }
+  .dial::after{
+    content:'';
+    position:absolute; top:2px; left:50%;
+    width:2px; height:8px; background:var(--red);
+    transform-origin:1px 25px;
+  }
+
+  label{display:block; font-size:12px; font-family:'IBM Plex Mono',monospace; letter-spacing:.05em; text-transform:uppercase; color:rgba(243,239,227,0.6); margin-bottom:6px;}
+  input[type=text]{
+    width:100%; padding:10px 12px; margin-bottom:14px;
+    background:var(--ink); border:1px solid var(--line); border-radius:3px;
+    color:var(--paper); font-family:'IBM Plex Sans',sans-serif; font-size:14px;
+  }
+  input[type=text]:focus{outline:2px solid var(--amber); outline-offset:1px;}
+
+  .plant-toggle{display:flex; gap:10px; margin-bottom:16px;}
+  .plant-btn{
+    flex:1; padding:12px; text-align:center; border:1px solid var(--line);
+    border-radius:3px; cursor:pointer; font-family:'IBM Plex Mono',monospace;
+    font-weight:600; background:transparent; color:var(--paper); font-size:14px;
+  }
+  .plant-btn.active{background:var(--amber); color:var(--ink); border-color:var(--amber);}
+
+  button.primary{
+    width:100%; padding:14px; border:none; border-radius:3px;
+    background:var(--green); color:var(--ink); font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:16px; cursor:pointer;
+  }
+  button.primary:disabled{opacity:.4; cursor:not-allowed;}
+  button.primary:active:not(:disabled){transform:translateY(1px);}
+
+  .hud{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'IBM Plex Mono',monospace; margin-bottom:12px;
+  }
+  .hud .stat{font-size:13px; color:rgba(243,239,227,0.7);}
+  .hud .stat b{color:var(--paper); font-size:18px; display:block;}
+
+  #stage{
+    position:relative; height:360px; background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/100% 36px,
+      var(--ink);
+    border:1px solid var(--line); border-radius:4px; overflow:hidden;
+  }
+  .falling{
+    position:absolute; top:-40px; width:150px; padding:8px 10px;
+    background:var(--panel-light); border:1px solid var(--amber); border-radius:4px;
+    font-size:12px; font-family:'IBM Plex Mono',monospace; text-align:center;
+    line-height:1.35; pointer-events:none;
+  }
+  .falling .ic{font-size:20px; display:block; margin-bottom:2px;}
+
+  .bins{display:flex; gap:8px; margin-top:10px;}
+  .bin{
+    flex:1; padding:14px 6px; text-align:center; border-radius:4px; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px;
+    border:2px solid var(--line); user-select:none;
+  }
+  .bin:active{transform:translateY(1px);}
+  .bin.air{color:var(--water); border-color:var(--water);}
+  .bin.water{color:#78C7E6; border-color:#78C7E6;}
+  .bin.waste{color:var(--amber); border-color:var(--amber);}
+  .bin.flash{background:rgba(79,178,134,0.35); border-color:var(--green);}
+  .bin.flashbad{background:rgba(214,69,69,0.35); border-color:var(--red);}
+
+  #feedback{
+    min-height:20px; font-family:'IBM Plex Mono',monospace; font-size:12.5px;
+    margin-top:10px; color:var(--amber);
+  }
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{padding:8px 6px; text-align:left; border-bottom:1px solid var(--line);}
+  th{font-family:'IBM Plex Mono',monospace; text-transform:uppercase; font-size:10.5px; letter-spacing:.06em; color:rgba(243,239,227,0.55); font-weight:500;}
+  td.rank{font-family:'IBM Plex Mono',monospace; color:var(--amber); width:24px;}
+  tr.me{background:rgba(242,169,59,0.12);}
+
+  .tabs{display:flex; gap:8px; margin-bottom:12px;}
+  .tab{padding:8px 14px; border-radius:3px; border:1px solid var(--line); cursor:pointer; font-family:'IBM Plex Mono',monospace; font-size:12px;}
+  .tab.active{background:var(--amber); color:var(--ink); border-color:var(--amber);}
+
+  .hidden{display:none !important;}
+  .center-note{text-align:center; font-size:13px; color:rgba(243,239,227,0.55); margin-top:10px;}
+  .learned{
+    margin-top:6px; padding:10px 12px; background:rgba(79,178,134,0.1);
+    border-left:3px solid var(--green); font-size:13px; border-radius:2px;
+  }
+  a.ghostlink{color:var(--amber); font-size:12px; font-family:'IBM Plex Mono',monospace; cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="eyebrow">Environmental Monitoring — Ice Breaker</div>
+    <h1>Sample Sort Rush</h1>
+    <p>Samples, readings and waste are falling from the stack. Sort each one into the right monitoring category before it hits the ground. Score points, learn the real classification, and climb the P2 / P3 leaderboard.</p>
+  </header>
+
+  <!-- REGISTRATION -->
+  <div class="panel" id="regPanel">
+    <div style="display:flex; gap:14px; align-items:center; margin-bottom:16px;">
+      <div class="dial">EM</div>
+      <div>
+        <h3 style="font-size:16px;">Sign in to play</h3>
+        <div style="font-size:12.5px; color:rgba(243,239,227,0.6);">Your score is logged to the shared leaderboard.</div>
+      </div>
+    </div>
+    <label for="pname">Name</label>
+    <input type="text" id="pname" placeholder="Juan Dela Cruz" maxlength="40">
+    <label for="pdept">Department</label>
+    <input type="text" id="pdept" placeholder="e.g. QA, Facilities, EHS" maxlength="40">
+    <label>Base Plant</label>
+    <div class="plant-toggle">
+      <div class="plant-btn" data-plant="P2">Plant P2</div>
+      <div class="plant-btn" data-plant="P3">Plant P3</div>
+    </div>
+    <button class="primary" id="startBtn" disabled>Start Game</button>
+    <div class="center-note">45 seconds. 3 bins. Sort fast, sort right.</div>
+  </div>
+
+  <!-- GAME -->
+  <div class="panel hidden" id="gamePanel">
+    <div class="hud">
+      <div class="stat">Player<br><b id="hudName">—</b></div>
+      <div class="stat">Time<br><b id="hudTime">45</b></div>
+      <div class="stat">Score<br><b id="hudScore">0</b></div>
+    </div>
+    <div id="stage"></div>
+    <div class="bins">
+      <div class="bin air" data-cat="air">💨<br>Air Monitoring</div>
+      <div class="bin water" data-cat="water">💧<br>Water Monitoring</div>
+      <div class="bin waste" data-cat="waste">🗑️<br>Waste Mgmt</div>
+    </div>
+    <div id="feedback">Tap the bin that matches the falling sample.</div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="panel hidden" id="resultPanel">
+    <div class="eyebrow">Round complete</div>
+    <h2 id="resultScore" style="font-size:32px; margin-bottom:4px;">0 pts</h2>
+    <div style="font-size:13px; color:rgba(243,239,227,0.65); margin-bottom:12px;">Nice sorting, <span id="resultName"></span>. Here's what you caught and missed:</div>
+    <div id="resultLog" style="font-size:12.5px; font-family:'IBM Plex Mono',monospace; max-height:160px; overflow-y:auto; margin-bottom:6px;"></div>
+    <button class="primary" id="playAgainBtn" style="margin-top:10px;">Play Again</button>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="panel" id="lbPanel">
+    <div class="eyebrow">Leaderboard — Top 10</div>
+    <div class="tabs">
+      <div class="tab active" data-plant="P2">Plant P2</div>
+      <div class="tab" data-plant="P3">Plant P3</div>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Name</th><th>Dept</th><th>Score</th></tr></thead>
+      <tbody id="lbBody"><tr><td colspan="4" style="color:rgba(243,239,227,0.4);">No scores yet — be the first.</td></tr></tbody>
+    </table>
+    <div class="center-note"><span class="ghostlink" id="refreshLb">↻ refresh</span></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ---------- data: samples & the real-world fact behind each ----------
+  const ITEMS = [
+    {label:"Stack emission test", ic:"🏭", cat:"air", fact:"Stack emissions are tested for particulates & gases like SOx/NOx — air monitoring."},
+    {label:"PM2.5 ambient reading", ic:"🌫️", cat:"air", fact:"PM2.5 is measured by ambient air quality monitors, not water instruments."},
+    {label:"Boiler flue gas", ic:"🔥", cat:"air", fact:"Boiler flue gas is checked for CO, NOx and opacity — an air source."},
+    {label:"VOC/solvent vapor", ic:"🧪", cat:"air", fact:"Volatile solvent vapors are tracked as fugitive air emissions."},
+    {label:"Odor complaint sample", ic:"👃", cat:"air", fact:"Odor monitoring falls under air quality management."},
+
+    {label:"Effluent discharge sample", ic:"🚰", cat:"water", fact:"Effluent from the WWTP outfall is tested for BOD/COD before discharge."},
+    {label:"BOD/COD water sample", ic:"🧫", cat:"water", fact:"BOD & COD indicate organic pollution load in wastewater."},
+    {label:"pH meter reading", ic:"🔬", cat:"water", fact:"pH is a core parameter for wastewater compliance monitoring."},
+    {label:"Stormwater runoff", ic:"🌧️", cat:"water", fact:"Stormwater runoff is monitored to prevent uncontrolled discharge to drains."},
+    {label:"Oil-water separator check", ic:"🛢️", cat:"water", fact:"Oil-water separators protect effluent quality before it leaves site."},
+    {label:"Cooling tower blowdown", ic:"♨️", cat:"water", fact:"Blowdown water is monitored for conductivity & chemical dosing."},
+
+    {label:"Hazardous waste drum", ic:"☣️", cat:"waste", fact:"Hazardous waste drums need manifests and licensed haulers — solid/hazardous waste."},
+    {label:"Used oil container", ic:"🪣", cat:"waste", fact:"Used oil is hazardous waste — stored, labeled, and logged until pickup."},
+    {label:"E-waste bin", ic:"💻", cat:"waste", fact:"E-waste is tracked separately due to heavy metals content."},
+    {label:"Spent solvent container", ic:"🧴", cat:"waste", fact:"Spent solvents are hazardous waste, not a wastewater stream."},
+    {label:"WWTP sludge", ic:"🪱", cat:"waste", fact:"Dewatered sludge from the WWTP is disposed of as solid waste."},
+    {label:"Scrap metal pile", ic:"🔩", cat:"waste", fact:"Scrap metal is recyclable solid waste, tracked in waste manifests."},
+    {label:"Chemical container (empty)", ic:"🧯", cat:"waste", fact:"Even 'empty' chemical containers are handled as hazardous waste."},
+  ];
+
+  const ROUND_SECONDS = 45;
+  let SPEED_MIN = 3200, SPEED_MAX = 4600; // ms to fall, decreases over time
+
+  let player = {name:"", dept:"", plant:""};
+  let score = 0, timeLeft = ROUND_SECONDS, running = false, timerId=null, spawnId=null;
+  let log = [];
+  let activeFalling = new Map(); // id -> {el,cat,timeoutId}
+  let fallCounter = 0;
+
+  // ---------- registration ----------
+  const nameEl = document.getElementById('pname');
+  const deptEl = document.getElementById('pdept');
+  const startBtn = document.getElementById('startBtn');
+  document.querySelectorAll('.plant-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.plant-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      player.plant = btn.dataset.plant;
+      validateReg();
+    });
+  });
+  [nameEl, deptEl].forEach(el=>el.addEventListener('input', validateReg));
+  function validateReg(){
+    player.name = nameEl.value.trim();
+    player.dept = deptEl.value.trim();
+    startBtn.disabled = !(player.name && player.dept && player.plant);
+  }
+
+  startBtn.addEventListener('click', startGame);
+
+  function startGame(){
+    document.getElementById('regPanel').classList.add('hidden');
+    document.getElementById('resultPanel').classList.add('hidden');
+    document.getElementById('gamePanel').classList.remove('hidden');
+    document.getElementById('hudName').textContent = player.name.split(' ')[0];
+    score = 0; timeLeft = ROUND_SECONDS; log = []; fallCounter=0;
+    document.getElementById('hudScore').textContent = '0';
+    document.getElementById('hudTime').textContent = String(timeLeft);
+    document.getElementById('stage').innerHTML = '';
+    activeFalling.forEach(f=>clearTimeout(f.timeoutId));
+    activeFalling.clear();
+    running = true;
+    timerId = setInterval(tick, 1000);
+    spawnLoop();
+  }
+
+  function tick(){
+    timeLeft--;
+    document.getElementById('hudTime').textContent = String(timeLeft);
+    if(timeLeft<=0){ endGame(); }
+  }
+
+  function spawnLoop(){
+    if(!running) return;
+    spawnItem();
+    const elapsedFrac = 1 - (timeLeft/ROUND_SECONDS);
+    const delay = 1400 - elapsedFrac*700 + Math.random()*400; // spawns get faster
+    spawnId = setTimeout(spawnLoop, Math.max(650,delay));
+  }
+
+  function spawnItem(){
+    const stage = document.getElementById('stage');
+    const stageW = stage.clientWidth;
+    const item = ITEMS[Math.floor(Math.random()*ITEMS.length)];
+    const el = document.createElement('div');
+    const id = 'f'+(fallCounter++);
+    el.className = 'falling';
+    el.style.left = Math.max(6, Math.random()*(stageW-160)) + 'px';
+    el.innerHTML = '<span class="ic">'+item.ic+'</span>'+item.label;
+    stage.appendChild(el);
+
+    const elapsedFrac = 1 - (timeLeft/ROUND_SECONDS);
+    const fallDur = SPEED_MAX - elapsedFrac*(SPEED_MAX-SPEED_MIN);
+    el.style.transition = 'top '+fallDur+'ms linear';
+    requestAnimationFrame(()=>{ el.style.top = (stage.clientHeight-4)+'px'; });
+
+    const timeoutId = setTimeout(()=>{
+      if(!activeFalling.has(id)) return;
+      missItem(id, item);
+    }, fallDur);
+
+    activeFalling.set(id, {el, item, timeoutId});
+  }
+
+  document.querySelectorAll('.bin').forEach(bin=>{
+    bin.addEventListener('click', ()=> handleBinClick(bin.dataset.cat, bin));
+  });
+
+  function handleBinClick(cat, binEl){
+    if(!running) return;
+    // find lowest (soonest to land) active falling item
+    let bestId=null, bestTop=-1;
+    activeFalling.forEach((f,id)=>{
+      const top = parseFloat(f.el.style.top)||0;
+      if(top>bestTop){bestTop=top; bestId=id;}
+    });
+    if(bestId===null){ return; }
+    const f = activeFalling.get(bestId);
+    clearTimeout(f.timeoutId);
+    activeFalling.delete(bestId);
+    f.el.remove();
+
+    if(f.item.cat===cat){
+      score += 10;
+      log.push({ok:true, label:f.item.label, fact:f.item.fact});
+      flashFeedback(binEl, true);
+      setFeedback('✓ Correct — '+f.item.fact);
+    } else {
+      score = Math.max(0, score-5);
+      log.push({ok:false, label:f.item.label, fact:f.item.fact});
+      flashFeedback(binEl, false);
+      setFeedback('✗ Not quite — '+f.item.fact);
+    }
+    document.getElementById('hudScore').textContent = String(score);
+  }
+
+  function missItem(id, item){
+    const f = activeFalling.get(id);
+    if(f){ f.el.remove(); activeFalling.delete(id); }
+    score = Math.max(0, score-3);
+    log.push({ok:false, label:item.label, fact:item.fact, missed:true});
+    document.getElementById('hudScore').textContent = String(score);
+    setFeedback('⚠ Missed — '+item.fact);
+  }
+
+  function flashFeedback(binEl, good){
+    binEl.classList.add(good?'flash':'flashbad');
+    setTimeout(()=>binEl.classList.remove(good?'flash':'flashbad'), 250);
+  }
+  function setFeedback(msg){
+    document.getElementById('feedback').textContent = msg;
+  }
+
+  function endGame(){
+    running = false;
+    clearInterval(timerId);
+    clearTimeout(spawnId);
+    activeFalling.forEach(f=>{clearTimeout(f.timeoutId); f.el.remove();});
+    activeFalling.clear();
+
+    document.getElementById('gamePanel').classList.add('hidden');
+    document.getElementById('resultPanel').classList.remove('hidden');
+    document.getElementById('resultScore').textContent = score+' pts';
+    document.getElementById('resultName').textContent = player.name.split(' ')[0];
+    const logEl = document.getElementById('resultLog');
+    logEl.innerHTML = log.slice(-12).reverse().map(l=>{
+      const mark = l.ok? '✓' : (l.missed? '⚠':'✗');
+      const color = l.ok? 'var(--green)' : (l.missed? 'var(--amber)':'var(--red)');
+      return '<div style="color:'+color+'; margin-bottom:4px;">'+mark+' '+l.label+'</div>';
+    }).join('');
+
+    submitScore();
+  }
+
+  document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+    document.getElementById('resultPanel').classList.add('hidden');
+    document.getElementById('regPanel').classList.remove('hidden');
+  });
+
+  // ---------- leaderboard storage (Google Sheet via Apps Script Web App) ----------
+  const SHEET_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwwDXlJOxz41fcmjMsk0VpzCiCM07CMRo5iNcSZAw1hMUYEzkB-GgjQGXJF6tM9CLB1/exec';
+
+  async function submitScore(){
+    try{
+      await fetch(SHEET_WEBHOOK_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: player.name, department: player.dept, plant: player.plant, score: score
+        })
+      });
+    }catch(e){
+      console.error('leaderboard save failed', e);
+      setFeedbackSafe('Could not reach the scoreboard — your score may not have been saved.');
+    }
+    loadLeaderboard(player.plant);
+  }
+  function setFeedbackSafe(msg){
+    const el = document.getElementById('feedback');
+    if(el) el.textContent = msg;
+  }
+
+  let currentTab = 'P2';
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTab = tab.dataset.plant;
+      loadLeaderboard(currentTab);
+    });
+  });
+  document.getElementById('refreshLb').addEventListener('click', ()=>loadLeaderboard(currentTab));
+
+  async function loadLeaderboard(plant){
+    currentTab = plant;
+    const body = document.getElementById('lbBody');
+    body.innerHTML = '<tr><td colspan="4" style="color:rgba(243,239,227,0.4);">Loading…</td></tr>';
+    let entries = [];
+    try{
+      const res = await fetch(SHEET_WEBHOOK_URL + '?plant=' + encodeURIComponent(plant));
+      entries = await res.json();
+    }catch(e){
+      body.innerHTML = '<tr><td colspan="4" style="color:rgba(243,239,227,0.4);">Could not load scoreboard.</td></tr>';
+      return;
+    }
+
+    const filtered = entries.sort((a,b)=>b.score-a.score).slice(0,10);
+    if(filtered.length===0){
+      body.innerHTML = '<tr><td colspan="4" style="color:rgba(243,239,227,0.4);">No scores yet — be the first.</td></tr>';
+      return;
+    }
+    body.innerHTML = filtered.map((e,i)=>{
+      const mine = e.name===player.name && e.dept===player.dept && e.score===score && e.plant===player.plant;
+      return '<tr class="'+(mine?'me':'')+'"><td class="rank">'+(i+1)+'</td><td>'+escapeHtml(e.name)+'</td><td>'+escapeHtml(e.dept)+'</td><td>'+e.score+'</td></tr>';
+    }).join('');
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  loadLeaderboard('P2');
+})();
+</script>
+</body>
+</html>
